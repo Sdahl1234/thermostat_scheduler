@@ -44,6 +44,7 @@ const TRANSLATIONS = {
     editor_entry_id_hint: "Found in Settings \u2192 Integrations \u2192 Thermostat Scheduler \u2192 entry URL",
     editor_title_label: "Card title", editor_title_optional: "(optional)",
     editor_title_placeholder: "Thermostat Schedules",
+    btn_copy_day: "Copy day", btn_paste_day: "Paste", btn_copy_plan: "Copy plan", btn_paste_plan: "Paste plan",
   },
   da: {
     tab_thermostats: "Termostater", tab_groups: "Grupper", tab_schedule: "Tidsplan",
@@ -71,6 +72,7 @@ const TRANSLATIONS = {
     editor_entry_id_hint: "Findes i Indstillinger \u2192 Integrationer \u2192 Termostatplanl\u00e6gger \u2192 indgangs-URL",
     editor_title_label: "Korttitel", editor_title_optional: "(valgfri)",
     editor_title_placeholder: "Termostatplaner",
+    btn_copy_day: "Kopier dag", btn_paste_day: "Indsæt", btn_copy_plan: "Kopier plan", btn_paste_plan: "Indsæt plan",
   },
   de: {
     tab_thermostats: "Thermostate", tab_groups: "Gruppen", tab_schedule: "Zeitplan",
@@ -98,6 +100,7 @@ const TRANSLATIONS = {
     editor_entry_id_hint: "Zu finden in Einstellungen \u2192 Integrationen \u2192 Thermostat-Planer \u2192 Eintrags-URL",
     editor_title_label: "Kartentitel", editor_title_optional: "(optional)",
     editor_title_placeholder: "Thermostat-Zeitpl\u00e4ne",
+    btn_copy_day: "Tag kopieren", btn_paste_day: "Einf\u00fcgen", btn_copy_plan: "Plan kopieren", btn_paste_plan: "Plan einf\u00fcgen",
   },
   nl: {
     tab_thermostats: "Thermostaten", tab_groups: "Groepen", tab_schedule: "Schema",
@@ -125,6 +128,7 @@ const TRANSLATIONS = {
     editor_entry_id_hint: "Te vinden in Instellingen \u2192 Integraties \u2192 Thermostaatplanner \u2192 invoer-URL",
     editor_title_label: "Kaarttitel", editor_title_optional: "(optioneel)",
     editor_title_placeholder: "Thermostaat schema's",
+    btn_copy_day: "Dag kopi\u00ebren", btn_paste_day: "Plakken", btn_copy_plan: "Plan kopi\u00ebren", btn_paste_plan: "Plan plakken",
   },
   fr: {
     tab_thermostats: "Thermostats", tab_groups: "Groupes", tab_schedule: "Planning",
@@ -151,6 +155,7 @@ const TRANSLATIONS = {
     editor_entry_id_hint: "Trouvable dans Param\u00e8tres \u2192 Int\u00e9grations \u2192 Planificateur de thermostat \u2192 URL d'entr\u00e9e",
     editor_title_label: "Titre de la carte", editor_title_optional: "(optionnel)",
     editor_title_placeholder: "Plannings des thermostats",
+    btn_copy_day: "Copier le jour", btn_paste_day: "Coller", btn_copy_plan: "Copier le planning", btn_paste_plan: "Coller le planning",
   },
   es: {
     tab_thermostats: "Termostatos", tab_groups: "Grupos", tab_schedule: "Horario",
@@ -177,6 +182,7 @@ const TRANSLATIONS = {
     editor_entry_id_hint: "Enc\u00faéntralo en Ajustes \u2192 Integraciones \u2192 Planificador de termostato \u2192 URL de entrada",
     editor_title_label: "T\u00edtulo de la tarjeta", editor_title_optional: "(opcional)",
     editor_title_placeholder: "Horarios de termostatos",
+    btn_copy_day: "Copiar d\u00eda", btn_paste_day: "Pegar", btn_copy_plan: "Copiar plan", btn_paste_plan: "Pegar plan",
   },
   sv: {
     tab_thermostats: "Termostater", tab_groups: "Grupper", tab_schedule: "Schema",
@@ -204,6 +210,7 @@ const TRANSLATIONS = {
     editor_entry_id_hint: "Finns i Inst\u00e4llningar \u2192 Integrationer \u2192 Termostatschema\u00e4ggare \u2192 post-URL",
     editor_title_label: "Korttitel", editor_title_optional: "(valfri)",
     editor_title_placeholder: "Termostatscheman",
+    btn_copy_day: "Kopiera dag", btn_paste_day: "Klistra in", btn_copy_plan: "Kopiera schema", btn_paste_plan: "Klistra in schema",
   },
   nb: {
     tab_thermostats: "Termostater", tab_groups: "Grupper", tab_schedule: "Tidsplan",
@@ -231,6 +238,7 @@ const TRANSLATIONS = {
     editor_entry_id_hint: "Finnes i Innstillinger \u2192 Integrasjoner \u2192 Termostatplanlegger \u2192 oppf\u00f8ring-URL",
     editor_title_label: "Korttittel", editor_title_optional: "(valgfri)",
     editor_title_placeholder: "Termostatplaner",
+    btn_copy_day: "Kopier dag", btn_paste_day: "Lim inn", btn_copy_plan: "Kopier plan", btn_paste_plan: "Lim inn plan",
   },
 };
 
@@ -272,6 +280,8 @@ class ThermostatScheduleCard extends HTMLElement {
     this._addThermData = { name: "", entity_id: "", group_id: "" };
     this._addGroupName = "";
     this._modal = null; // { type: "alert"|"confirm", message, resolve }
+    this._copiedDay = null;   // array of intervals for copy-day
+    this._copiedPlan = null;  // full week schedule for copy-plan
   }
 
   // -------------------------------------------------------------------------
@@ -533,6 +543,10 @@ class ThermostatScheduleCard extends HTMLElement {
           <div class="day-label">${this._t("day_" + day)}</div>
           ${rows}
           ${canAdd ? `<button class="btn-add-interval" data-day="${day}">${this._t("btn_add_interval")}</button>` : `<span class="hint">${this._t("max_intervals")}</span>`}
+          <div class="day-copy-actions">
+            <button class="btn-copy-day" data-day="${day}">${this._t("btn_copy_day")}</button>
+            ${this._copiedDay ? `<button class="btn-paste-day" data-day="${day}">${this._t("btn_paste_day")}</button>` : ""}
+          </div>
         </div>`;
     }).join("");
 
@@ -543,6 +557,8 @@ class ThermostatScheduleCard extends HTMLElement {
         <div class="schedule-actions">
           <button id="btn-save-schedule" class="btn-primary">${this._t("btn_save_schedule")}</button>
           <button id="btn-reload-schedule">${this._t("btn_reload")}</button>
+          <button id="btn-copy-plan">${this._t("btn_copy_plan")}</button>
+          ${this._copiedPlan ? `<button id="btn-paste-plan">${this._t("btn_paste_plan")}</button>` : ""}
         </div>
       </div>`;
   }
@@ -636,7 +652,8 @@ class ThermostatScheduleCard extends HTMLElement {
         const t = this._data.thermostats.find(x => x.id === btn.dataset.id);
         if (!t) return;
         this._tab = "schedule";
-        this._scheduleTarget = "t:" + t.id;
+        // Grouped thermostats share the group schedule; navigate there instead.
+        this._scheduleTarget = t.group_id ? "g:" + t.group_id : "t:" + t.id;
         this._loadScheduleForTarget();
         this._render();
       });
@@ -754,6 +771,46 @@ class ThermostatScheduleCard extends HTMLElement {
     // Reload schedule
     const reloadBtn = s.querySelector("#btn-reload-schedule");
     if (reloadBtn) reloadBtn.addEventListener("click", () => { this._loadScheduleForTarget(); this._render(); });
+
+    // Copy day
+    s.querySelectorAll(".btn-copy-day").forEach(btn => {
+      btn.addEventListener("click", () => {
+        this._copiedDay = this._collectDayFromDOM(btn.dataset.day).map(iv => ({ ...iv }));
+        this._render();
+      });
+    });
+
+    // Paste day
+    s.querySelectorAll(".btn-paste-day").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const day = btn.dataset.day;
+        if (this._copiedDay) {
+          this._editSchedule[day] = this._copiedDay.map(iv => ({ ...iv }));
+          this._render();
+        }
+      });
+    });
+
+    // Copy plan
+    const copyPlanBtn = s.querySelector("#btn-copy-plan");
+    if (copyPlanBtn) copyPlanBtn.addEventListener("click", () => {
+      this._copiedPlan = DAYS.reduce((acc, day) => {
+        acc[day] = this._collectDayFromDOM(day).map(iv => ({ ...iv }));
+        return acc;
+      }, {});
+      this._render();
+    });
+
+    // Paste plan
+    const pastePlanBtn = s.querySelector("#btn-paste-plan");
+    if (pastePlanBtn) pastePlanBtn.addEventListener("click", () => {
+      if (this._copiedPlan) {
+        DAYS.forEach(day => {
+          this._editSchedule[day] = (this._copiedPlan[day] || []).map(iv => ({ ...iv }));
+        });
+        this._render();
+      }
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -777,6 +834,19 @@ class ThermostatScheduleCard extends HTMLElement {
       acc[day] = (stored[day] || []).map(iv => ({ ...iv }));
       return acc;
     }, {});
+  }
+
+  _collectDayFromDOM(day) {
+    const s = this.shadowRoot;
+    const intervals = this._editSchedule[day] || [];
+    return intervals.map((iv, idx) => {
+      const startEl = s.querySelector(`.iv-start[data-day="${day}"][data-idx="${idx}"]`);
+      const tempEl = s.querySelector(`.iv-temp[data-day="${day}"][data-idx="${idx}"]`);
+      return {
+        start: startEl ? startEl.value : iv.start,
+        temperature: tempEl ? parseFloat(tempEl.value) : iv.temperature,
+      };
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -1019,7 +1089,12 @@ class ThermostatScheduleCard extends HTMLElement {
       .interval-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin-bottom: 4px; padding: 4px; background: var(--secondary-background-color, #f5f5f5); border-radius: 4px; }
       .interval-row input[type="time"] { width: 88px; }
       .unit { font-size: 12px; color: var(--secondary-text-color, #666); }
-      .schedule-actions { margin-top: 12px; display: flex; gap: 8px; }
+      .schedule-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+      .day-copy-actions { display: flex; gap: 2px; margin-top: 4px; flex-wrap: wrap; }
+      .btn-copy-day { font-size: 11px; padding: 3px 6px; background: var(--secondary-background-color, #e0e0e0); }
+      .btn-paste-day { font-size: 11px; padding: 3px 6px; background: var(--primary-color, #03a9f4); color: #fff; }
+      #btn-copy-plan { background: var(--secondary-background-color, #e0e0e0); }
+      #btn-paste-plan { background: var(--primary-color, #03a9f4); color: #fff; }
       .group-disabled td { opacity: 0.5; }
       .group-disabled td:last-child { opacity: 1; }
       .disabled-badge { font-size: 11px; font-weight: 600; color: #b45309; background: #fef3c7; border: 1px solid #fcd34d; padding: 1px 6px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
