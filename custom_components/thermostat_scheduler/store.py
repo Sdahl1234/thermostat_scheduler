@@ -1,8 +1,10 @@
+"""Store."""
+
 from __future__ import annotations
 
 import logging
-import uuid
 from typing import Any
+import uuid
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
@@ -26,7 +28,10 @@ def _empty_schedule() -> dict[str, list]:
 
 
 class SchedulerStore:
+    """Store class."""
+
     def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
+        """Init."""
         self._store: Store[dict[str, Any]] = Store(
             hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}"
         )
@@ -35,6 +40,7 @@ class SchedulerStore:
         self._schedules: dict[str, dict[str, list]] = {}
 
     async def async_load(self) -> None:
+        """Load."""
         data = await self._store.async_load()
         if data is None:
             return
@@ -43,6 +49,7 @@ class SchedulerStore:
         self._schedules = data.get("schedules", {})
 
     async def async_save(self) -> None:
+        """Save."""
         await self._store.async_save(
             {
                 "thermostats": self._thermostats,
@@ -52,6 +59,7 @@ class SchedulerStore:
         )
 
     def get_data(self) -> dict[str, Any]:
+        """Get Data."""
         return {
             "thermostats": list(self._thermostats),
             "groups": list(self._groups),
@@ -59,17 +67,21 @@ class SchedulerStore:
         }
 
     def get_thermostats(self) -> list[dict[str, Any]]:
+        """Get thermostat."""
         return list(self._thermostats)
 
     def get_groups(self) -> list[dict[str, Any]]:
+        """Get group."""
         return list(self._groups)
 
     def get_schedule(self, target_id: str) -> dict[str, list]:
+        """Gt schedule."""
         return self._schedules.get(target_id, _empty_schedule())
 
     def add_thermostat(
         self, name: str, entity_id: str, group_id: str | None = None
     ) -> dict[str, Any]:
+        """Add thermostat."""
         thermostat: dict[str, Any] = {
             "id": str(uuid.uuid4()),
             "name": name,
@@ -80,6 +92,7 @@ class SchedulerStore:
         return thermostat
 
     def remove_thermostat(self, thermostat_id: str) -> bool:
+        """Remove thermostat."""
         before = len(self._thermostats)
         self._thermostats = [t for t in self._thermostats if t["id"] != thermostat_id]
         if len(self._thermostats) < before:
@@ -94,6 +107,7 @@ class SchedulerStore:
         entity_id: str | None = None,
         group_id: Any = _UNSET_SENTINEL,
     ) -> dict[str, Any] | None:
+        """Update thermostat."""
         for thermostat in self._thermostats:
             if thermostat["id"] == thermostat_id:
                 if name is not None:
@@ -106,11 +120,13 @@ class SchedulerStore:
         return None
 
     def add_group(self, name: str) -> dict[str, Any]:
+        """Add group."""
         group: dict[str, Any] = {"id": str(uuid.uuid4()), "name": name, "enabled": True}
         self._groups.append(group)
         return group
 
     def remove_group(self, group_id: str) -> bool:
+        """Remove group."""
         before = len(self._groups)
         self._groups = [g for g in self._groups if g["id"] != group_id]
         if len(self._groups) < before:
@@ -124,6 +140,7 @@ class SchedulerStore:
     def update_group(
         self, group_id: str, name: str | None = None, enabled: bool | None = None
     ) -> dict[str, Any] | None:
+        """Update group."""
         for group in self._groups:
             if group["id"] == group_id:
                 if name is not None:
@@ -134,6 +151,7 @@ class SchedulerStore:
         return None
 
     def set_schedule(self, target_id: str, schedule: dict[str, list]) -> None:
+        """Set schedule."""
         validated: dict[str, list] = {}
         for day in DAYS_OF_WEEK:
             intervals = schedule.get(day, [])
@@ -143,5 +161,6 @@ class SchedulerStore:
     def get_schedule_for_thermostat(
         self, thermostat: dict[str, Any]
     ) -> dict[str, list]:
+        """Get scheduele for thermostat."""
         key = thermostat.get("group_id") or thermostat["id"]
         return self._schedules.get(key, _empty_schedule())

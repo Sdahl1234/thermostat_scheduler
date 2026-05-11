@@ -1,3 +1,5 @@
+"""Configflow."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -12,11 +14,14 @@ STEP_USER_SCHEMA = vol.Schema({vol.Required("name"): str})
 
 
 class ThermostatSchedulerConfigFlow(ConfigFlow, domain=DOMAIN):
+    """Configflow class."""
+
     VERSION = 1
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
+        """Step user."""
         if user_input is not None:
             return self.async_create_entry(
                 title=user_input["name"],

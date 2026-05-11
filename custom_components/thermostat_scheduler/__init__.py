@@ -1,3 +1,5 @@
+"""Init."""
+
 from __future__ import annotations
 
 import logging
@@ -14,6 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Setup entry."""
     store = SchedulerStore(hass, entry.entry_id)
     await store.async_load()
 
@@ -31,6 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload entry."""
     entry_data = hass.data[DOMAIN].pop(entry.entry_id, {})
     coordinator: ScheduleCoordinator | None = entry_data.get(DATA_COORDINATOR)
     if coordinator is not None:

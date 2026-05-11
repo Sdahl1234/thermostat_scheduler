@@ -1,8 +1,10 @@
+"""Scheduler."""
+
 from __future__ import annotations
 
-import logging
 from collections.abc import Callable
 from datetime import datetime
+import logging
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_change
@@ -16,16 +18,21 @@ _WEEKDAY_TO_NAME = DAYS_OF_WEEK
 
 
 class ScheduleCoordinator:
+    """Coordinator."""
+
     def __init__(self, hass: HomeAssistant, store: SchedulerStore) -> None:
+        """Init."""
         self._hass = hass
         self._store = store
         self._cancel: Callable[[], None] | None = None
 
     def start(self) -> None:
+        """Start."""
         self._cancel = async_track_time_change(self._hass, self._handle_tick, second=0)
         _LOGGER.debug("ScheduleCoordinator started")
 
     def stop(self) -> None:
+        """Stop."""
         if self._cancel is not None:
             self._cancel()
             self._cancel = None

@@ -1,3 +1,5 @@
+"""Websocket api."""
+
 from __future__ import annotations
 
 import logging
@@ -17,7 +19,7 @@ from .const import (
     MAX_INTERVALS_PER_DAY,
 )
 from .scheduler import ScheduleCoordinator
-from .store import SchedulerStore, _UNSET_SENTINEL, _UnsetType
+from .store import _UNSET_SENTINEL, SchedulerStore
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +39,7 @@ _registered = False
 
 @callback
 def async_register_websocket_api(hass: HomeAssistant) -> None:
+    """Register."""
     global _registered
     if _registered:
         return
@@ -48,6 +51,7 @@ def async_register_websocket_api(hass: HomeAssistant) -> None:
 def _get_entry_data(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> tuple[SchedulerStore, ScheduleCoordinator] | None:
+    """Get eentry data."""
     entry_id: str = msg["entry_id"]
     entry_data = hass.data.get(DOMAIN, {}).get(entry_id)
     if entry_data is None:
@@ -59,6 +63,7 @@ def _get_entry_data(
 
 
 def _validate_schedule(schedule: dict[str, list]) -> str | None:
+    """Validate schedule."""
     for day, intervals in schedule.items():
         if len(intervals) > MAX_INTERVALS_PER_DAY:
             return f"{day}: maximum {MAX_INTERVALS_PER_DAY} intervals per day"
@@ -79,6 +84,7 @@ def _validate_schedule(schedule: dict[str, list]) -> str | None:
 def ws_get_config(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> None:
+    """Get config."""
     result = _get_entry_data(hass, connection, msg)
     if result is None:
         return
@@ -100,6 +106,7 @@ def ws_get_config(
 async def ws_add_thermostat(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> None:
+    """Add thermostat."""
     result = _get_entry_data(hass, connection, msg)
     if result is None:
         return
@@ -125,6 +132,7 @@ async def ws_add_thermostat(
 async def ws_remove_thermostat(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> None:
+    """Remove thermostat."""
     result = _get_entry_data(hass, connection, msg)
     if result is None:
         return
@@ -151,11 +159,12 @@ async def ws_remove_thermostat(
 async def ws_update_thermostat(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> None:
+    """Update thermostat."""
     result = _get_entry_data(hass, connection, msg)
     if result is None:
         return
     store, _ = result
-    group_id = msg["group_id"] if "group_id" in msg else _UNSET_SENTINEL
+    group_id = msg["group_id"] if "group_id" in msg else _UNSET_SENTINEL  # noqa: SIM401
     updated = store.update_thermostat(
         thermostat_id=msg["thermostat_id"],
         name=msg.get("name"),
@@ -183,6 +192,7 @@ async def ws_update_thermostat(
 async def ws_add_group(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> None:
+    """Add group."""
     result = _get_entry_data(hass, connection, msg)
     if result is None:
         return
@@ -204,6 +214,7 @@ async def ws_add_group(
 async def ws_remove_group(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> None:
+    """Remove group."""
     result = _get_entry_data(hass, connection, msg)
     if result is None:
         return
@@ -232,6 +243,7 @@ async def ws_remove_group(
 async def ws_update_group(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> None:
+    """Update group."""
     result = _get_entry_data(hass, connection, msg)
     if result is None:
         return
@@ -239,7 +251,7 @@ async def ws_update_group(
     updated = store.update_group(
         group_id=msg["group_id"],
         name=msg.get("name"),
-        enabled=msg["enabled"] if "enabled" in msg else None,
+        enabled=msg["enabled"] if "enabled" in msg else None,  # noqa: SIM401
     )
     if updated is None:
         connection.send_error(msg["id"], "not_found", "Group not found")
@@ -261,6 +273,7 @@ async def ws_update_group(
 async def ws_set_schedule(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> None:
+    """Set schedule."""
     result = _get_entry_data(hass, connection, msg)
     if result is None:
         return
