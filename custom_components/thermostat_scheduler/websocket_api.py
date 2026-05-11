@@ -34,16 +34,15 @@ _SCHEDULE_SCHEMA = vol.Schema(
     {vol.Optional(day): [_INTERVAL_SCHEMA] for day in DAYS_OF_WEEK}
 )
 
-_registered = False
+_WS_API_REGISTERED = "ws_api_registered"
 
 
 @callback
 def async_register_websocket_api(hass: HomeAssistant) -> None:
     """Register."""
-    global _registered
-    if _registered:
+    if hass.data.get(DOMAIN, {}).get(_WS_API_REGISTERED):
         return
-    _registered = True
+    hass.data.setdefault(DOMAIN, {})[_WS_API_REGISTERED] = True
     for cmd in _COMMANDS:
         websocket_api.async_register_command(hass, cmd)
 
