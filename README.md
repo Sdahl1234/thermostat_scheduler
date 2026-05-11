@@ -52,6 +52,11 @@ lovelace:
 
 A full management card. Requires **admin** access.
 
+<img width="918" height="275" alt="image" src="https://github.com/user-attachments/assets/874db36c-f865-4344-b010-d9102f98a584" />
+<img width="916" height="245" alt="image" src="https://github.com/user-attachments/assets/1786e2b5-d3b7-48de-847c-b6bf965b70fe" />
+<img width="916" height="429" alt="image" src="https://github.com/user-attachments/assets/89a24c64-be3a-43e3-9c90-ca00b0099842" />
+
+
 The card has three tabs:
 
 | Tab | What you can do |
@@ -116,6 +121,9 @@ If the target is disabled, a yellow warning banner is shown below the dropdown a
 ### `thermostat-schedule-view-card`
 
 A compact **read-only** card that displays the weekly schedule for a single thermostat or group. It automatically refreshes whenever a schedule is saved via the management card.
+
+<img width="443" height="162" alt="image" src="https://github.com/user-attachments/assets/7731fe77-6eb6-4fae-90a5-60dbaab95cc1" />
+
 
 ```yaml
 type: custom:thermostat-schedule-view-card
