@@ -152,6 +152,7 @@ async def ws_remove_thermostat(
         vol.Optional("name"): str,
         vol.Optional("entity_id"): str,
         vol.Optional("group_id"): vol.Any(None, str),
+        vol.Optional("enabled"): bool,
     }
 )
 @websocket_api.async_response
@@ -169,11 +170,13 @@ async def ws_update_thermostat(
         name=msg.get("name"),
         entity_id=msg.get("entity_id"),
         group_id=group_id,
+        enabled=msg["enabled"] if "enabled" in msg else None,  # noqa: SIM401
     )
     if updated is None:
         connection.send_error(msg["id"], "not_found", "Thermostat not found")
         return
     await store.async_save()
+    hass.bus.async_fire("thermostat_scheduler_updated", {"entry_id": msg["entry_id"]})
     connection.send_result(
         msg["id"], {"thermostat": updated, "thermostats": store.get_thermostats()}
     )
@@ -256,6 +259,7 @@ async def ws_update_group(
         connection.send_error(msg["id"], "not_found", "Group not found")
         return
     await store.async_save()
+    hass.bus.async_fire("thermostat_scheduler_updated", {"entry_id": msg["entry_id"]})
     connection.send_result(msg["id"], {"group": updated, "groups": store.get_groups()})
 
 

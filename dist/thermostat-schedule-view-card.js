@@ -37,6 +37,13 @@ class ThermostatScheduleViewCard extends HTMLElement {
       this._loaded = true;
       this._loadData();
       this._subscribe();
+      return;
+    }
+    if (!this._renderDebounce) {
+      this._renderDebounce = setTimeout(() => {
+        this._renderDebounce = null;
+        if (!this._loading) this._render();
+      }, 250);
     }
   }
 
@@ -80,7 +87,7 @@ class ThermostatScheduleViewCard extends HTMLElement {
           const grp = result.groups.find(g => g.id === therm.group_id);
           this._targetDisabled = grp?.enabled === false;
         } else {
-          this._targetDisabled = false;
+          this._targetDisabled = therm?.enabled === false;
         }
       } else {
         const group = result.groups.find(g => g.id === id);

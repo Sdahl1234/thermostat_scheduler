@@ -45,6 +45,8 @@ const TRANSLATIONS = {
     editor_title_label: "Card title", editor_title_optional: "(optional)",
     editor_title_placeholder: "Thermostat Schedules",
     btn_copy_day: "Copy day", btn_paste_day: "Paste", btn_copy_plan: "Copy plan", btn_paste_plan: "Paste plan",
+    thermostat_disabled: "(disabled)",
+    schedule_target_disabled: "\u26a0\ufe0f This thermostat or group is disabled \u2014 its schedule will not run until re-enabled.",
   },
   da: {
     tab_thermostats: "Termostater", tab_groups: "Grupper", tab_schedule: "Tidsplan",
@@ -73,6 +75,8 @@ const TRANSLATIONS = {
     editor_title_label: "Korttitel", editor_title_optional: "(valgfri)",
     editor_title_placeholder: "Termostatplaner",
     btn_copy_day: "Kopier dag", btn_paste_day: "Indsæt", btn_copy_plan: "Kopier plan", btn_paste_plan: "Indsæt plan",
+    thermostat_disabled: "(deaktiveret)",
+    schedule_target_disabled: "\u26a0\ufe0f Denne termostat eller gruppe er deaktiveret \u2014 dens tidsplan k\u00f8rer ikke f\u00f8r den genaktiveres.",
   },
   de: {
     tab_thermostats: "Thermostate", tab_groups: "Gruppen", tab_schedule: "Zeitplan",
@@ -101,6 +105,8 @@ const TRANSLATIONS = {
     editor_title_label: "Kartentitel", editor_title_optional: "(optional)",
     editor_title_placeholder: "Thermostat-Zeitpl\u00e4ne",
     btn_copy_day: "Tag kopieren", btn_paste_day: "Einf\u00fcgen", btn_copy_plan: "Plan kopieren", btn_paste_plan: "Plan einf\u00fcgen",
+    thermostat_disabled: "(deaktiviert)",
+    schedule_target_disabled: "\u26a0\ufe0f Dieser Thermostat oder diese Gruppe ist deaktiviert \u2014 der Zeitplan l\u00e4uft erst nach Reaktivierung.",
   },
   nl: {
     tab_thermostats: "Thermostaten", tab_groups: "Groepen", tab_schedule: "Schema",
@@ -129,6 +135,8 @@ const TRANSLATIONS = {
     editor_title_label: "Kaarttitel", editor_title_optional: "(optioneel)",
     editor_title_placeholder: "Thermostaat schema's",
     btn_copy_day: "Dag kopi\u00ebren", btn_paste_day: "Plakken", btn_copy_plan: "Plan kopi\u00ebren", btn_paste_plan: "Plan plakken",
+    thermostat_disabled: "(uitgeschakeld)",
+    schedule_target_disabled: "\u26a0\ufe0f Deze thermostaat of groep is uitgeschakeld \u2014 het schema wordt pas uitgevoerd na inschakeling.",
   },
   fr: {
     tab_thermostats: "Thermostats", tab_groups: "Groupes", tab_schedule: "Planning",
@@ -156,6 +164,8 @@ const TRANSLATIONS = {
     editor_title_label: "Titre de la carte", editor_title_optional: "(optionnel)",
     editor_title_placeholder: "Plannings des thermostats",
     btn_copy_day: "Copier le jour", btn_paste_day: "Coller", btn_copy_plan: "Copier le planning", btn_paste_plan: "Coller le planning",
+    thermostat_disabled: "(d\u00e9sactiv\u00e9)",
+    schedule_target_disabled: "\u26a0\ufe0f Ce thermostat ou ce groupe est d\u00e9sactiv\u00e9 \u2014 son planning ne s\u2019ex\u00e9cutera pas avant r\u00e9activation.",
   },
   es: {
     tab_thermostats: "Termostatos", tab_groups: "Grupos", tab_schedule: "Horario",
@@ -183,6 +193,8 @@ const TRANSLATIONS = {
     editor_title_label: "T\u00edtulo de la tarjeta", editor_title_optional: "(opcional)",
     editor_title_placeholder: "Horarios de termostatos",
     btn_copy_day: "Copiar d\u00eda", btn_paste_day: "Pegar", btn_copy_plan: "Copiar plan", btn_paste_plan: "Pegar plan",
+    thermostat_disabled: "(desactivado)",
+    schedule_target_disabled: "\u26a0\ufe0f Este termostato o grupo est\u00e1 desactivado \u2014 su horario no se ejecutar\u00e1 hasta que se reactive.",
   },
   sv: {
     tab_thermostats: "Termostater", tab_groups: "Grupper", tab_schedule: "Schema",
@@ -211,6 +223,8 @@ const TRANSLATIONS = {
     editor_title_label: "Korttitel", editor_title_optional: "(valfri)",
     editor_title_placeholder: "Termostatscheman",
     btn_copy_day: "Kopiera dag", btn_paste_day: "Klistra in", btn_copy_plan: "Kopiera schema", btn_paste_plan: "Klistra in schema",
+    thermostat_disabled: "(inaktiverad)",
+    schedule_target_disabled: "\u26a0\ufe0f Denna termostat eller grupp \u00e4r inaktiverad \u2014 schemat k\u00f6rs inte f\u00f6rr\u00e4n det aktiveras igen.",
   },
   nb: {
     tab_thermostats: "Termostater", tab_groups: "Grupper", tab_schedule: "Tidsplan",
@@ -239,6 +253,8 @@ const TRANSLATIONS = {
     editor_title_label: "Korttittel", editor_title_optional: "(valgfri)",
     editor_title_placeholder: "Termostatplaner",
     btn_copy_day: "Kopier dag", btn_paste_day: "Lim inn", btn_copy_plan: "Kopier plan", btn_paste_plan: "Lim inn plan",
+    thermostat_disabled: "(deaktivert)",
+    schedule_target_disabled: "\u26a0\ufe0f Denne termostaten eller gruppen er deaktivert \u2014 planen kj\u00f8rer ikke f\u00f8r den aktiveres p\u00e5 nytt.",
   },
 };
 
@@ -295,10 +311,18 @@ class ThermostatScheduleCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    // Load data only once (or when entry_id changes)
     if (!this._loaded) {
       this._loaded = true;
       this._loadData();
+      return;
+    }
+    // Debounced re-render so the card stays fresh (language, theme, climate
+    // entity state) without flooding the DOM on every HA state-change tick.
+    if (!this._renderDebounce) {
+      this._renderDebounce = setTimeout(() => {
+        this._renderDebounce = null;
+        if (!this._loading && !this._modal) this._render();
+      }, 250);
     }
   }
 
@@ -411,13 +435,15 @@ class ThermostatScheduleCard extends HTMLElement {
             </td>
           </tr>`;
       }
+      const isDisabled = !t.group_id && t.enabled === false;
       return `
-        <tr>
-          <td>${this._escHtml(t.name)}</td>
+        <tr class="${isDisabled ? "therm-disabled" : ""}">
+          <td>${this._escHtml(t.name)}${isDisabled ? ` <span class="disabled-badge">${this._t("thermostat_disabled")}</span>` : ""}</td>
           <td><code>${this._escHtml(t.entity_id)}</code></td>
           <td>${t.group_id ? this._escHtml(groupMap[t.group_id] || t.group_id) : "—"}</td>
           <td>
             <button class="btn-edit-therm" data-id="${t.id}">${this._t("btn_edit")}</button>
+            ${!t.group_id ? `<button class="btn-toggle-therm" data-id="${t.id}" data-enabled="${t.enabled === false ? "false" : "true"}">${t.enabled === false ? this._t("btn_enable") : this._t("btn_disable")}</button>` : ""}
             <button class="btn-schedule-therm" data-id="${t.id}">${this._t("btn_schedule")}</button>
             <button class="btn-del-therm btn-danger" data-id="${t.id}">${this._t("btn_remove")}</button>
           </td>
@@ -510,9 +536,25 @@ class ThermostatScheduleCard extends HTMLElement {
     const { thermostats, groups } = this._data;
 
     const targetOptions = [
-      ...thermostats.filter(t => !t.group_id).map(t => `<option value="t:${t.id}" ${this._scheduleTarget === "t:"+t.id ? "selected" : ""}>${this._t("thermostat_prefix")} ${this._escHtml(t.name)}</option>`),
-      ...groups.map(g => `<option value="g:${g.id}" ${this._scheduleTarget === "g:"+g.id ? "selected" : ""}>${this._t("group_prefix")} ${this._escHtml(g.name)}</option>`),
+      ...thermostats.filter(t => !t.group_id).map(t => {
+        const dis = t.enabled === false;
+        return `<option value="t:${t.id}" ${this._scheduleTarget === "t:"+t.id ? "selected" : ""}>${this._t("thermostat_prefix")} ${this._escHtml(t.name)}${dis ? " " + this._t("thermostat_disabled") : ""}</option>`;
+      }),
+      ...groups.map(g => {
+        const dis = g.enabled === false;
+        return `<option value="g:${g.id}" ${this._scheduleTarget === "g:"+g.id ? "selected" : ""}>${this._t("group_prefix")} ${this._escHtml(g.name)}${dis ? " " + this._t("group_disabled") : ""}</option>`;
+      }),
     ].join("");
+
+    const selectedDisabled = (() => {
+      if (!this._scheduleTarget) return false;
+      if (this._scheduleTarget.startsWith("t:")) {
+        const t = thermostats.find(x => "t:"+x.id === this._scheduleTarget);
+        return t?.enabled === false;
+      }
+      const g = groups.find(x => "g:"+x.id === this._scheduleTarget);
+      return g?.enabled === false;
+    })();
 
     const targetSelect = `
       <div class="schedule-target-row">
@@ -521,7 +563,8 @@ class ThermostatScheduleCard extends HTMLElement {
           <option value="">${this._t("select")}</option>
           ${targetOptions}
         </select>
-      </div>`;
+      </div>
+      ${selectedDisabled ? `<div class="schedule-disabled-warning">${this._t("schedule_target_disabled")}</div>` : ""}`;
 
     if (!this._scheduleTarget) {
       return `<div class="section">${targetSelect}<p class="hint">${this._t("schedule_hint")}</p></div>`;
@@ -643,6 +686,14 @@ class ThermostatScheduleCard extends HTMLElement {
       btn.addEventListener("click", async () => {
         if (!await this._showConfirm(this._t("confirm_remove_thermostat"))) return;
         this._doRemoveThermostat(btn.dataset.id);
+      });
+    });
+
+    // Toggle enable/disable
+    s.querySelectorAll(".btn-toggle-therm").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const enabled = btn.dataset.enabled !== "false";
+        this._doToggleThermostat(btn.dataset.id, !enabled);
       });
     });
 
@@ -899,6 +950,14 @@ class ThermostatScheduleCard extends HTMLElement {
     this._render();
   }
 
+  async _doToggleThermostat(id, enabled) {
+    try {
+      const res = await this._send("thermostat_scheduler/update_thermostat", { thermostat_id: id, enabled });
+      this._data.thermostats = res.thermostats;
+    } catch (e) { await this._showAlert(this._t("error_prefix") + (e.message || e)); }
+    this._render();
+  }
+
   async _doToggleGroup(id, enabled) {
     try {
       const res = await this._send("thermostat_scheduler/update_group", { group_id: id, enabled });
@@ -1089,6 +1148,10 @@ class ThermostatScheduleCard extends HTMLElement {
       .interval-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin-bottom: 4px; padding: 4px; background: var(--secondary-background-color, #f5f5f5); border-radius: 4px; }
       .interval-row input[type="time"] { width: 88px; }
       .unit { font-size: 12px; color: var(--secondary-text-color, #666); }
+      .schedule-disabled-warning {
+        background: #fff3cd; color: #856404; border: 1px solid #ffc107;
+        border-radius: 6px; padding: 8px 12px; font-size: 13px; margin-bottom: 10px;
+      }
       .schedule-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
       .day-copy-actions { display: flex; gap: 2px; margin-top: 4px; flex-wrap: wrap; }
       .btn-copy-day { font-size: 11px; padding: 3px 6px; background: var(--secondary-background-color, #e0e0e0); }
@@ -1097,6 +1160,8 @@ class ThermostatScheduleCard extends HTMLElement {
       #btn-paste-plan { background: var(--primary-color, #03a9f4); color: #fff; }
       .group-disabled td { opacity: 0.5; }
       .group-disabled td:last-child { opacity: 1; }
+      .therm-disabled td { opacity: 0.5; }
+      .therm-disabled td:last-child { opacity: 1; }
       .disabled-badge { font-size: 11px; font-weight: 600; color: #b45309; background: #fef3c7; border: 1px solid #fcd34d; padding: 1px 6px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
 
       /* Modal dialog */

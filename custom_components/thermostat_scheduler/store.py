@@ -87,6 +87,7 @@ class SchedulerStore:
             "name": name,
             "entity_id": entity_id,
             "group_id": group_id,
+            "enabled": True,
         }
         self._thermostats.append(thermostat)
         return thermostat
@@ -106,6 +107,7 @@ class SchedulerStore:
         name: str | None = None,
         entity_id: str | None = None,
         group_id: Any = _UNSET_SENTINEL,
+        enabled: bool | None = None,
     ) -> dict[str, Any] | None:
         """Update thermostat."""
         for thermostat in self._thermostats:
@@ -116,6 +118,8 @@ class SchedulerStore:
                     thermostat["entity_id"] = entity_id
                 if not isinstance(group_id, _UnsetType):
                     thermostat["group_id"] = group_id
+                if enabled is not None:
+                    thermostat["enabled"] = enabled
                 return dict(thermostat)
         return None
 
