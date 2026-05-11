@@ -8,7 +8,8 @@ A custom Home Assistant integration that automatically sets temperatures on your
 
 - Weekly schedule per thermostat (up to **6 time intervals per day**)
 - **Groups**: assign multiple thermostats to a group so they all follow the same schedule
-- Groups can be **enabled/disabled** without deleting them
+- Groups and individual thermostats can be **enabled/disabled** without deleting them
+- **Copy/paste** a single day's intervals or an entire week's plan between days and targets
 - Persistent storage — schedules survive restarts
 - WebSocket-based API (admin only)
 - Two companion Lovelace cards for management and read-only display
@@ -55,9 +56,9 @@ The card has three tabs:
 
 | Tab | What you can do |
 |-----|-----------------|
-| **Thermostats** | Add, edit, remove thermostats; assign them to a group |
+| **Thermostats** | Add, edit, enable/disable, remove thermostats; assign them to a group |
 | **Groups** | Add, edit, enable/disable, remove groups |
-| **Schedule** | Select a thermostat or group and edit its weekly schedule |
+| **Schedule** | Select a thermostat or group and edit its weekly schedule; copy/paste days or entire plans |
 
 #### Card configuration
 
@@ -81,12 +82,32 @@ The card includes a **visual editor** — click the pencil icon in the card pick
 3. Optionally assign it to a group.
 4. Click **Add**.
 
+#### Enabling and disabling
+
+A thermostat that is **not in a group** can be individually enabled or disabled using the **Enable / Disable** button in the Thermostats tab. A disabled thermostat's schedule will not run until it is re-enabled. A `(disabled)` badge is shown next to its name in the list and in the Schedule tab dropdown.
+
+Groups have the same enable/disable control in the Groups tab. Disabling a group suspends the schedule for every thermostat that belongs to it.
+
+#### Copying and pasting schedules
+
+In the **Schedule** tab each day block has a **Copy day** button. Once a day has been copied, a **Paste** button appears on every other day in the grid — clicking it overwrites that day's intervals with the copied ones.
+
+The schedule action bar also has **Copy plan** and **Paste plan** buttons. **Copy plan** captures all seven days at once; **Paste plan** overwrites the entire week of the currently selected target. This makes it easy to clone a schedule from one thermostat or group to another:
+
+1. Select the source target in the dropdown and click **Copy plan**.
+2. Select the destination target and click **Paste plan**.
+3. Click **Save Schedule**.
+
+> Copied intervals capture the current in-editor values (including unsaved edits). Nothing is saved to the backend until you click **Save Schedule**.
+
 #### Editing a schedule
 
 1. Open the **Schedule** tab.
 2. Select a thermostat or group from the dropdown.
 3. For each day, click **+ Add** to add a time interval — enter the start time (`HH:MM`) and target temperature.
 4. Click **Save Schedule**.
+
+If the target is disabled, a yellow warning banner is shown below the dropdown as a reminder that the schedule will not run until the target is re-enabled.
 
 > **Note:** Schedules assigned to a group apply to all thermostats in that group. Individual thermostat schedules only apply when the thermostat has no group assigned.
 
@@ -113,7 +134,7 @@ title: "Living Room Schedule"   # optional
 
 The thermostat and group IDs are UUIDs assigned when they are created. You can find them by opening the **Schedule** tab in `thermostat-schedule-card` and inspecting the dropdown values, or by calling the `thermostat_scheduler/get_config` WebSocket command.
 
-If the target belongs to a disabled group, a **disabled** badge is shown in the card header.
+If the target belongs to a disabled group **or** is a disabled ungrouped thermostat, a **disabled** badge is shown in the card header. The card automatically refreshes whenever a schedule is saved or a thermostat/group is enabled or disabled.
 
 ---
 
@@ -143,7 +164,7 @@ All commands require admin access.
 | `thermostat_scheduler/get_config` | Returns all thermostats, groups and schedules |
 | `thermostat_scheduler/add_thermostat` | Adds a thermostat (`name`, `entity_id`, optional `group_id`) |
 | `thermostat_scheduler/remove_thermostat` | Removes a thermostat by `thermostat_id` |
-| `thermostat_scheduler/update_thermostat` | Updates name, entity or group of a thermostat |
+| `thermostat_scheduler/update_thermostat` | Updates `name`, `entity_id`, `group_id` or `enabled` flag of a thermostat |
 | `thermostat_scheduler/add_group` | Creates a group (`name`) |
 | `thermostat_scheduler/remove_group` | Removes a group; thermostats become ungrouped |
 | `thermostat_scheduler/update_group` | Updates group `name` or `enabled` flag |
