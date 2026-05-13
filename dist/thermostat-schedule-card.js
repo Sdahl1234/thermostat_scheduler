@@ -321,7 +321,10 @@ class ThermostatScheduleCard extends HTMLElement {
     if (!this._renderDebounce) {
       this._renderDebounce = setTimeout(() => {
         this._renderDebounce = null;
-        if (!this._loading && !this._modal) this._render();
+        if (this._loading || this._modal) return;
+        // Don't blow away the DOM while the user has a dropdown/input focused.
+        if (this.shadowRoot.activeElement) return;
+        this._render();
       }, 250);
     }
   }

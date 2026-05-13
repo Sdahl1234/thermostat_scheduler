@@ -42,7 +42,11 @@ class ThermostatScheduleViewCard extends HTMLElement {
     if (!this._renderDebounce) {
       this._renderDebounce = setTimeout(() => {
         this._renderDebounce = null;
-        if (!this._loading) this._render();
+        if (this._loading) return;
+        if (this.shadowRoot.activeElement) {
+          return;
+        }
+        this._render();
       }, 250);
     }
   }
